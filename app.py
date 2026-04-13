@@ -47,12 +47,12 @@ def calcular_status(vencimento_str):
 # --- CABEÇALHO COM LOGO ---
 col_logo, col_titulo = st.columns([1, 4])
 with col_logo:
-    # Substitua o link abaixo pelo link da sua logomarca (hospedada no Imgur ou similar)
-    st.image("https://i.imgur.com/a/kwmTPvd", width=100) 
+    
+    st.image("https://i.imgur.com/a/kwmTPv.png", with=100) 
 with col_titulo:
-    st.title("SUPERTV4K - Gestão Pro")
+    st.title("GESTÃO DE CLIENTES")
 
-# --- CARREGAR DADOS ---
+# ---CARREGAR DADOS ---
 conn = sqlite3.connect('clientes.db')
 df = pd.read_sql_query("SELECT * FROM assinaturas", conn)
 conn.close()
