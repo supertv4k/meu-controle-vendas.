@@ -47,10 +47,10 @@ def calcular_status(vencimento_str):
 # --- CABEÇALHO COM LOGO ---
 col_logo, col_titulo = st.columns([1, 4])
 with col_logo:
-    
-    st.image("https://share.icloud.com/photos/0d4d14_RUi1TZeaC3C-WPlqVA", width=100) 
+    # Substitua o link abaixo pelo link da sua logomarca (hospedada no Imgur ou similar)
+    st.image("https://i.imgur.com/a/kwmTPvd", width=100) 
 with col_titulo:
-    st.title("GESTÃO DE CLIENTES")
+    st.title("SUPERTV4K - Gestão Pro")
 
 # --- CARREGAR DADOS ---
 conn = sqlite3.connect('clientes.db')
@@ -127,4 +127,3 @@ with tab3:
                 col_c2.link_button("Enviar", link)
         else:
             st.success("Tudo em dia! Nenhum cliente vencendo nos próximos 5 dias.")
-
