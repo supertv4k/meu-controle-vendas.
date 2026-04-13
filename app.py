@@ -53,7 +53,7 @@ def calcular_status(vencimento_str):
 col_logo, col_titulo = st.columns([1, 4])
 with col_logo:
     # Correção: width em vez de with
-    st.image("https://i.imgur.com/a/kwmTPv.png", width=100) 
+    st.image("https://i.imgur.com/a/kwmTPvd", width=100) 
 with col_titulo:
     st.title("GESTÃO DE CLIENTES SUPERTV4K")
 
