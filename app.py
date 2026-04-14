@@ -7,7 +7,8 @@ import base64
 import io
 
 # --- CONFIGURAÇÃO VISUAL ---
-st.set_page_config(page_title="SUPERTV4K GESTÃO", layout="wide")
+st.image("https://i.imgur.com/CKq9BVx.png", width=200)
+st.set_page_config(page_title="GESTÃO DE CLIENTES", layout="wide")
 
 st.markdown("""
     <style>
