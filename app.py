@@ -67,7 +67,7 @@ def get_servidores():
     return lista
 
 # --- INTERFACE ---
-st.title("🚀 SUPER TV GESTÃO DE CLIENTES")
+st.title("CLIENTES")
 st.image("https://i.imgur.com/CKq9BVx.png,width=250")
 
 conn = sqlite3.connect('supertv_gestao.db')
