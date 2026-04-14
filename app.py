@@ -7,7 +7,6 @@ import base64
 import io
 
 # --- CONFIGURAÇÃO VISUAL ---
-st.image("https://i.imgur.com/CKq9BVx.png", width=200)
 st.set_page_config(page_title="GESTÃO DE CLIENTES", layout="wide")
 
 st.markdown("""
