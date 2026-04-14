@@ -1,30 +1,33 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 import urllib.parse
-import base64
 import io
 
 # --- CONFIGURAÇÃO VISUAL ---
 st.set_page_config(page_title="GESTÃO DE CLIENTES", layout="wide")
 
-# Estilização para modo escuro e botões destacados
 st.markdown("""
     <style>
     .main { background-color: #0e1117; color: white; }
     div[data-testid="stMetricValue"] { color: #00ff00; font-size: 24px; }
-    .stButton>button { border-radius: 8px; background-color: #ff0000; color: white; font-weight: bold; }
+    .stButton>button { border-radius: 8px; font-weight: bold; width: 100%; }
     .stTabs [data-baseweb="tab"] { color: white; font-size: 18px; }
+    /* Botão de excluir vermelho */
+    div.stButton > button:first-child[key^="del"] {
+        background-color: #ff4b4b;
+        color: white;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- EXIBIÇÃO DA LOGO NO TOPO ---
+# --- EXIBIÇÃO DA LOGO ---
 col_logo, _ = st.columns([1, 4])
 with col_logo:
     st.image("https://i.imgur.com/CKq9BVx.png", width=200)
 
-st.title(" GESTÃO DE CLIENTES")
+st.title("🚀 GESTÃO DE CLIENTES - SUPER TV")
 
 # --- BANCO DE DADOS ---
 def init_db():
@@ -60,9 +63,13 @@ def calcular_regua_cobranca(venc_data):
     return "Em dia 🟩", "", "🟩"
 
 # --- CARREGAR DADOS ---
-conn = sqlite3.connect('supertv_gestao.db')
-df = pd.read_sql_query("SELECT * FROM clientes", conn)
-conn.close()
+def get_data():
+    conn = sqlite3.connect('supertv_gestao.db')
+    df = pd.read_sql_query("SELECT * FROM clientes", conn)
+    conn.close()
+    return df
+
+df = get_data()
 
 # --- MÉTRICAS ---
 if not df.empty:
@@ -81,22 +88,83 @@ if not df.empty:
 tab1, tab2, tab3, tab4 = st.tabs(["👥 Clientes", "➕ Novo Cadastro", "📢 Cobrança", "📂 IMPORTAR / EXPORTAR"])
 
 with tab1:
-    busca = st.text_input("🔍 Buscar cliente...")
+    busca = st.text_input("🔍 Buscar cliente por nome...")
     if not df.empty:
         for i, r in df.iterrows():
             if busca.lower() in str(r['cliente']).lower():
                 status, _, icon = calcular_regua_cobranca(r['vencimento'])
+                
+                edit_key = f"edit_mode_{r['id']}"
+                if edit_key not in st.session_state:
+                    st.session_state[edit_key] = False
+
                 with st.expander(f"{icon} {r['cliente']} | {status}"):
-                    st.write(f"**User:** {r['usuario']} | **Senha:** {r['senha']}")
-                    st.write(f"**WhatsApp:** {r['whatsapp']}")
-                    if st.button("🗑️ Excluir", key=f"del{r['id']}"):
-                        c = sqlite3.connect('supertv_gestao.db')
-                        c.execute("DELETE FROM clientes WHERE id=?", (r['id'],))
-                        c.commit()
-                        st.rerun()
+                    if not st.session_state[edit_key]:
+                        # MODO VISUALIZAÇÃO
+                        c1, c2, c3 = st.columns(3)
+                        with c1:
+                            st.write(f"**👤 Usuário:** {r['usuario']}")
+                            st.write(f"**🔑 Senha:** {r['senha']}")
+                        with c2:
+                            st.write(f"**📞 WhatsApp:** {r['whatsapp']}")
+                            st.write(f"**🖥️ Servidor:** {r['servidor']}")
+                        with c3:
+                            st.write(f"**📅 Vencimento:** {r['vencimento']}")
+                            st.write(f"**💰 Valor:** R$ {r['mensalidade']:.2f}")
+                        
+                        st.divider()
+                        col_btn1, col_btn2, _ = st.columns([1, 1, 3])
+                        with col_btn1:
+                            if st.button("📝 Editar", key=f"btn_ed_{r['id']}"):
+                                st.session_state[edit_key] = True
+                                st.rerun()
+                        with col_btn2:
+                            if st.button("🗑️ Excluir", key=f"del_{r['id']}"):
+                                conn = sqlite3.connect('supertv_gestao.db')
+                                conn.execute("DELETE FROM clientes WHERE id=?", (r['id'],))
+                                conn.commit()
+                                conn.close()
+                                st.rerun()
+                    else:
+                        # MODO EDIÇÃO
+                        with st.form(key=f"form_ed_{r['id']}"):
+                            st.write(f"### Editando: {r['cliente']}")
+                            new_nome = st.text_input("Nome do Cliente", value=r['cliente'])
+                            
+                            ce1, ce2, ce3 = st.columns(3)
+                            new_user = ce1.text_input("Usuário", value=r['usuario'])
+                            new_pass = ce2.text_input("Senha", value=r['senha'])
+                            new_wpp = ce3.text_input("WhatsApp", value=r['whatsapp'])
+                            
+                            ce4, ce5, ce6 = st.columns(3)
+                            venc_atual = datetime.strptime(str(r['vencimento']), '%Y-%m-%d').date()
+                            new_venc = ce4.date_input("Vencimento", value=venc_atual)
+                            new_custo = ce5.number_input("Custo", value=float(r['custo']))
+                            new_mensal = ce6.number_input("Mensalidade", value=float(r['mensalidade']))
+                            
+                            new_serv = st.text_input("Servidor", value=r['servidor'])
+                            
+                            b_save, b_canc = st.columns(2)
+                            if b_save.form_submit_button("💾 Salvar Alterações"):
+                                conn = sqlite3.connect('supertv_gestao.db')
+                                conn.execute("""UPDATE clientes SET 
+                                             cliente=?, usuario=?, senha=?, vencimento=?, 
+                                             whatsapp=?, custo=?, mensalidade=?, servidor=? 
+                                             WHERE id=?""", 
+                                             (new_nome, new_user, new_pass, str(new_venc), 
+                                              new_wpp, new_custo, new_mensal, new_serv, r['id']))
+                                conn.commit()
+                                conn.close()
+                                st.session_state[edit_key] = False
+                                st.rerun()
+                            
+                            if b_canc.form_submit_button("❌ Cancelar"):
+                                st.session_state[edit_key] = False
+                                st.rerun()
 
 with tab2:
-    with st.form("cad"):
+    with st.form("cad_novo"):
+        st.subheader("🆕 Cadastrar Novo Cliente")
         c1, c2, c3 = st.columns(3)
         nome = c1.text_input("Nome")
         user = c2.text_input("Usuário")
@@ -106,72 +174,54 @@ with tab2:
         srv = c3.text_input("Servidor")
         v_custo = c1.number_input("Custo", value=0.0)
         v_mensal = c2.number_input("Mensalidade", value=0.0)
-        if st.form_submit_button("CADASTRAR"):
+        if st.form_submit_button("CADASTRAR CLIENTE"):
             c = sqlite3.connect('supertv_gestao.db')
             c.execute("INSERT INTO clientes (servidor, cliente, usuario, senha, vencimento, custo, mensalidade, whatsapp) VALUES (?,?,?,?,?,?,?,?)", 
                      (srv, nome, user, senha, str(venc), v_custo, v_mensal, wpp))
             c.commit()
+            c.close()
+            st.success("Cliente cadastrado!")
             st.rerun()
 
 with tab3:
-    st.subheader("🚀 Cobrança WhatsApp")
+    st.subheader("🚀 Régua de Cobrança WhatsApp")
     for i, r in df.iterrows():
         status, msg, icon = calcular_regua_cobranca(r['vencimento'])
         if icon != "🟩":
             link = f"https://wa.me/{r['whatsapp']}?text={urllib.parse.quote(msg)}"
-            st.link_button(f"📲 Enviar para {r['cliente']}", link)
+            col_c1, col_c2 = st.columns([3, 1])
+            col_c1.write(f"**{r['cliente']}** ({status})")
+            col_c2.link_button(f"📲 Cobrar", link)
 
 with tab4:
-    st.header("📂 Gerenciamento de Dados")
+    st.header("📂 Ferramentas de Dados")
     col_a, col_b = st.columns(2)
     
     with col_a:
-        st.subheader("📥 Importar Lista")
-        up = st.file_uploader("Subir arquivo Excel ou CSV", type=['csv', 'xlsx'])
+        st.subheader("📥 Importar Excel/CSV")
+        up = st.file_uploader("Selecione o arquivo", type=['csv', 'xlsx'])
         if up:
             try:
-                # O motor 'openpyxl' será usado automaticamente para .xlsx se estiver no requirements.txt
                 df_up = pd.read_csv(up) if up.name.endswith('.csv') else pd.read_excel(up)
-                
-                # Mapeamento Inteligente: Identifica as colunas pelos sinônimos
-                mapa = {
-                    'cliente': ['nome', 'cliente', 'nome do cliente', 'usuario_nome'],
-                    'usuario': ['user', 'usuario', 'login', 'usuário'],
-                    'vencimento': ['vencimento', 'validade', 'venc', 'data_venc'],
-                    'whatsapp': ['whatsapp', 'wpp', 'telefone', 'contato'],
-                    'custo': ['custo', 'compra', 'valor_pago'],
-                    'mensalidade': ['mensalidade', 'valor', 'venda', 'preço']
-                }
-                
-                df_f = pd.DataFrame()
-                for k, v in mapa.items():
-                    for col_planilha in df_up.columns:
-                        if col_planilha.lower().strip() in v:
-                            df_f[k] = df_up[col_planilha]
-                            break
-                
-                st.write("Prévia dos Dados Identificados:")
-                st.dataframe(df_f.head())
-                
-                if st.button("🚀 Confirmar Importação"):
+                st.write("Dados detectados:")
+                st.dataframe(df_up.head())
+                if st.button("Confirmar Importação"):
+                    # Aqui você pode adicionar a lógica de mapeamento se desejar
                     conn = sqlite3.connect('supertv_gestao.db')
-                    df_f.to_sql('clientes', conn, if_exists='append', index=False)
+                    df_up.to_sql('clientes', conn, if_exists='append', index=False)
                     conn.close()
-                    st.success(f"✅ {len(df_f)} clientes importados com sucesso!")
+                    st.success("Dados importados!")
                     st.rerun()
             except Exception as e:
-                st.error(f"Erro ao processar arquivo: {e}")
+                st.error(f"Erro: {e}")
 
     with col_b:
-        st.subheader("📤 Exportar Backup")
+        st.subheader("📤 Backup")
         if not df.empty:
             buf = io.BytesIO()
             with pd.ExcelWriter(buf, engine='openpyxl') as writer:
                 df.to_excel(writer, index=False, sheet_name='Clientes')
-            
-            st.download_button(
-                label="📥 Baixar Planilha Excel",
-                data=buf.getvalue(),
-                file_name=f"backup_supertv_{datetime.now().strftime('%d_%m_%Y')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            st.download_button(label="📥 Baixar Excel", data=buf.getvalue(), 
+                               file_name="backup_clientes.xlsx", 
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
