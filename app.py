@@ -5,223 +5,198 @@ from datetime import datetime
 import urllib.parse
 import io
 
-# --- CONFIGURAÇÃO VISUAL ---
-st.set_page_config(page_title="GESTÃO DE CLIENTES", layout="wide")
+# --- CONFIGURAÇÃO ---
+st.set_page_config(page_title="GESTÃO SUPER TV", layout="wide")
 
 st.markdown("""
     <style>
     .main { background-color: #0e1117; color: white; }
     div[data-testid="stMetricValue"] { color: #00ff00; font-size: 24px; }
     .stButton>button { border-radius: 8px; font-weight: bold; width: 100%; }
-    .stTabs [data-baseweb="tab"] { color: white; font-size: 18px; }
-    /* Botão de excluir vermelho */
-    div.stButton > button:first-child[key^="del"] {
-        background-color: #ff4b4b;
-        color: white;
-    }
+    div[data-baseweb="radio"] > div { flex-direction: row !important; gap: 20px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- EXIBIÇÃO DA LOGO ---
-col_logo, _ = st.columns([1, 4])
-with col_logo:
-    st.image("https://i.imgur.com/CKq9BVx.png", width=200)
-
-st.title("🚀 GESTÃO DE CLIENTES  ")
-
-# BANCO DE DADOS ---
+# --- BANCO DE DADOS ---
 def init_db():
     conn = sqlite3.connect('supertv_gestao.db')
     c = conn.cursor()
+    # Tabela de Clientes
     c.execute('''CREATE TABLE IF NOT EXISTS clientes 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, servidor TEXT, img_servidor TEXT, 
-                  cliente TEXT, usuario TEXT, senha TEXT, data_inicio DATE, 
-                  vencimento DATE, custo REAL, mensalidade REAL, whatsapp TEXT)''')
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, servidor TEXT, sistema TEXT, 
+                  cliente TEXT, usuario TEXT, senha TEXT, vencimento DATE, 
+                  custo REAL, mensalidade REAL, whatsapp TEXT)''')
+    # Tabela de Servidores (Para ser editável)
+    c.execute('''CREATE TABLE IF NOT EXISTS lista_servidores 
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT UNIQUE)''')
+    
+    # Inserção inicial dos seus servidores (apenas se a tabela estiver vazia)
+    c.execute("SELECT COUNT(*) FROM lista_servidores")
+    if c.fetchone()[0] == 0:
+        servidores_iniciais = [
+            "Uniplay", "Mundo GF", "P2Braz", "Play TV", "P2Cine", "Balde TV", 
+            "Speed Tv", "Unitv", "Mega TV", "New Mais", "P2Imperial", "Seven", 
+            "Zeus", "Ninety", "Alphaplay", "Genial", "RushPlay", "ClubTV", 
+            "EasyPlay", "Horizon", "BobPlayer", "IboPlayer", "IboPlayer pro"
+        ]
+        for s in servidores_iniciais:
+            c.execute("INSERT OR IGNORE INTO lista_servidores (nome) VALUES (?)", (s,))
+    
     conn.commit()
     conn.close()
 
 init_db()
 
+# --- FUNÇÕES DE DADOS ---
+def get_servidores():
+    conn = sqlite3.connect('supertv_gestao.db')
+    lista = pd.read_sql_query("SELECT nome FROM lista_servidores ORDER BY nome", conn)['nome'].tolist()
+    conn.close()
+    return lista if lista else ["Padrão"]
+
 def calcular_regua_cobranca(venc_data):
     hoje = datetime.now().date()
     try:
-        if isinstance(venc_data, str):
-            venc_data = datetime.strptime(venc_data, '%Y-%m-%d').date()
-        elif hasattr(venc_data, 'date'):
-            venc_data = venc_data.date()
-    except:
-        return "Erro Data", "", "⚪"
-    
-    dias = (venc_data - hoje).days
-    pix = "62.326.879/0001-13"
-    
-    if dias < 0:
-        return "Vencido 🟥", f"Sua Assinatura Venceu! Não Se Preocupe, faça o Pagamento que logo será Liberado! PIX {pix}", "🟥"
-    elif dias <= 5:
-        msg = f"Sua Assinatura vence em {dias} dias! Renove Agora e Fique Tranquilo! PIX {pix}"
-        return f"Vence em {dias} dias", msg, "🟨"
-    return "Em dia 🟩", "", "🟩"
+        venc_data = datetime.strptime(str(venc_data), '%Y-%m-%d').date() if isinstance(venc_data, str) else venc_data
+        dias = (venc_data - hoje).days
+        pix = "62.326.879/0001-13"
+        if dias < 0: return "Vencido 🟥", f"Sua Assinatura Venceu! PIX {pix}", "🟥"
+        if dias <= 5: return f"Vence em {dias} dias", f"Sua Assinatura vence em {dias} dias! PIX {pix}", "🟨"
+        return "Em dia 🟩", "", "🟩"
+    except: return "Erro Data", "", "⚪"
 
-# --- CARREGAR DADOS ---
-def get_data():
-    conn = sqlite3.connect('supertv_gestao.db')
-    df = pd.read_sql_query("SELECT * FROM clientes", conn)
-    conn.close()
-    return df
+# --- INTERFACE ---
+st.title("🚀 GESTÃO PROFISSIONAL - SUPER TV")
 
-df = get_data()
+conn = sqlite3.connect('supertv_gestao.db')
+df = pd.read_sql_query("SELECT * FROM clientes", conn)
+conn.close()
 
-# --- MÉTRICAS ---
-if not df.empty:
-    bruto = df['mensalidade'].sum()
-    custo_total = df['custo'].sum()
-    lucro = bruto - custo_total
-    vencidos = len([i for i, r in df.iterrows() if calcular_regua_cobranca(r['vencimento'])[2] == "🟥"])
+tab1, tab2, tab3 = st.tabs(["👥 Lista de Clientes", "➕ Novo Cadastro", "⚙️ Configurações & Financeiro"])
 
-    m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Clientes Ativos", len(df) - vencidos)
-    m2.metric("Vencidos", vencidos)
-    m3.metric("Faturamento Bruto", f"R$ {bruto:.2f}")
-    m4.metric("Lucro Líquido", f"R$ {lucro:.2f}")
-
-# --- ABAS ---
-tab1, tab2, tab3, tab4 = st.tabs(["👥 Clientes", "➕ Novo Cadastro", "📢 Cobrança", "📂 IMPORTAR / EXPORTAR"])
-
+# --- ABA 1: LISTA E EDIÇÃO ---
 with tab1:
-    busca = st.text_input("🔍 Buscar cliente por nome...")
+    busca = st.text_input("🔍 Buscar por nome...")
+    servidores_atualizados = get_servidores()
+    
     if not df.empty:
-        for i, r in df.iterrows():
+        for _, r in df.iterrows():
             if busca.lower() in str(r['cliente']).lower():
                 status, _, icon = calcular_regua_cobranca(r['vencimento'])
-                
-                edit_key = f"edit_mode_{r['id']}"
-                if edit_key not in st.session_state:
-                    st.session_state[edit_key] = False
+                edit_key = f"edit_{r['id']}"
+                if edit_key not in st.session_state: st.session_state[edit_key] = False
 
-                with st.expander(f"{icon} {r['cliente']} | {status}"):
+                with st.expander(f"{icon} {r['cliente']} | {r['sistema']} | {status}"):
                     if not st.session_state[edit_key]:
-                        # MODO VISUALIZAÇÃO
                         c1, c2, c3 = st.columns(3)
-                        with c1:
-                            st.write(f"**👤 Usuário:** {r['usuario']}")
-                            st.write(f"**🔑 Senha:** {r['senha']}")
-                        with c2:
-                            st.write(f"**📞 WhatsApp:** {r['whatsapp']}")
-                            st.write(f"**🖥️ Servidor:** {r['servidor']}")
-                        with c3:
-                            st.write(f"**📅 Vencimento:** {r['vencimento']}")
-                            st.write(f"**💰 Valor:** R$ {r['mensalidade']:.2f}")
+                        c1.write(f"**User/Senha:** `{r['usuario']}` / `{r['senha']}`")
+                        c1.write(f"**Servidor:** {r['servidor']}")
+                        c2.write(f"**WhatsApp:** {r['whatsapp']}")
+                        c2.write(f"**Vencimento:** {r['vencimento']}")
+                        c3.write(f"**Mensalidade:** R$ {r['mensalidade']:.2f}")
                         
-                        st.divider()
-                        col_btn1, col_btn2, _ = st.columns([1, 1, 3])
-                        with col_btn1:
-                            if st.button("📝 Editar", key=f"btn_ed_{r['id']}"):
-                                st.session_state[edit_key] = True
-                                st.rerun()
-                        with col_btn2:
-                            if st.button("🗑️ Excluir", key=f"del_{r['id']}"):
-                                conn = sqlite3.connect('supertv_gestao.db')
-                                conn.execute("DELETE FROM clientes WHERE id=?", (r['id'],))
-                                conn.commit()
-                                conn.close()
-                                st.rerun()
+                        col_b1, col_b2, col_b3 = st.columns([1, 1, 2])
+                        if col_b1.button("📝 Editar", key=f"btn_e_{r['id']}"):
+                            st.session_state[edit_key] = True
+                            st.rerun()
+                        if col_b2.button("🗑️ Excluir", key=f"btn_d_{r['id']}"):
+                            c = sqlite3.connect('supertv_gestao.db')
+                            c.execute("DELETE FROM clientes WHERE id=?", (r['id'],))
+                            c.commit()
+                            st.rerun()
+                        if col_b3.button("♻️ Renovar +30 dias", key=f"btn_r_{r['id']}"):
+                            nova_data = (datetime.strptime(str(r['vencimento']), '%Y-%m-%d') + pd.Timedelta(days=30)).date()
+                            c = sqlite3.connect('supertv_gestao.db')
+                            c.execute("UPDATE clientes SET vencimento=? WHERE id=?", (str(nova_data), r['id']))
+                            c.commit()
+                            st.success("Renovado!")
+                            st.rerun()
                     else:
-                        # MODO EDIÇÃO
-                        with st.form(key=f"form_ed_{r['id']}"):
-                            st.write(f"### Editando: {r['cliente']}")
-                            new_nome = st.text_input("Nome do Cliente", value=r['cliente'])
+                        with st.form(f"f_ed_{r['id']}"):
+                            new_nome = st.text_input("Nome", value=r['cliente'])
+                            ce1, ce2 = st.columns(2)
+                            new_sis = ce1.radio("Sistema", ["IPTV", "P2P"], index=0 if r['sistema']=="IPTV" else 1, horizontal=True)
+                            # Usa a lista editável de servidores
+                            new_srv = ce2.selectbox("Servidor", servidores_atualizados, 
+                                                   index=servidores_atualizados.index(r['servidor']) if r['servidor'] in servidores_atualizados else 0)
                             
-                            ce1, ce2, ce3 = st.columns(3)
-                            new_user = ce1.text_input("Usuário", value=r['usuario'])
-                            new_pass = ce2.text_input("Senha", value=r['senha'])
-                            new_wpp = ce3.text_input("WhatsApp", value=r['whatsapp'])
+                            ce3, ce4, ce5 = st.columns(3)
+                            new_user = ce3.text_input("User", value=r['usuario'])
+                            new_pass = ce4.text_input("Senha", value=r['senha'])
+                            new_wpp = ce5.text_input("WhatsApp", value=r['whatsapp'])
                             
-                            ce4, ce5, ce6 = st.columns(3)
-                            venc_atual = datetime.strptime(str(r['vencimento']), '%Y-%m-%d').date()
-                            new_venc = ce4.date_input("Vencimento", value=venc_atual)
-                            new_custo = ce5.number_input("Custo", value=float(r['custo']))
-                            new_mensal = ce6.number_input("Mensalidade", value=float(r['mensalidade']))
-                            
-                            new_serv = st.text_input("Servidor", value=r['servidor'])
-                            
-                            b_save, b_canc = st.columns(2)
-                            if b_save.form_submit_button("💾 Salvar Alterações"):
-                                conn = sqlite3.connect('supertv_gestao.db')
-                                conn.execute("""UPDATE clientes SET 
-                                             cliente=?, usuario=?, senha=?, vencimento=?, 
-                                             whatsapp=?, custo=?, mensalidade=?, servidor=? 
-                                             WHERE id=?""", 
-                                             (new_nome, new_user, new_pass, str(new_venc), 
-                                              new_wpp, new_custo, new_mensal, new_serv, r['id']))
-                                conn.commit()
-                                conn.close()
-                                st.session_state[edit_key] = False
-                                st.rerun()
-                            
-                            if b_canc.form_submit_button("❌ Cancelar"):
+                            if st.form_submit_button("Salvar Alterações"):
+                                c = sqlite3.connect('supertv_gestao.db')
+                                c.execute("UPDATE clientes SET cliente=?, sistema=?, servidor=?, usuario=?, senha=?, whatsapp=? WHERE id=?",
+                                         (new_nome, new_sis, new_srv, new_user, new_pass, new_wpp, r['id']))
+                                c.commit()
                                 st.session_state[edit_key] = False
                                 st.rerun()
 
+# --- ABA 2: NOVO CADASTRO ---
 with tab2:
-    with st.form("cad_novo"):
-        st.subheader("🆕 Cadastrar Novo Cliente")
-        c1, c2, c3 = st.columns(3)
-        nome = c1.text_input("Nome")
-        user = c2.text_input("Usuário")
-        senha = c3.text_input("Senha")
-        venc = c1.date_input("Vencimento")
-        wpp = c2.text_input("WhatsApp (Ex: 5511999999999)")
-        srv = c3.text_input("Servidor")
-        v_custo = c1.number_input("Custo", value=0.0)
-        v_mensal = c2.number_input("Mensalidade", value=0.0)
-        if st.form_submit_button("CADASTRAR CLIENTE"):
+    servidores_atualizados = get_servidores()
+    with st.form("novo_cadastro"):
+        st.subheader("Cadastro Rápido")
+        f1, f2 = st.columns(2)
+        nome_c = f1.text_input("Nome do Cliente")
+        whatsapp_c = f2.text_input("WhatsApp (Ex: 5511999999999)")
+        
+        f3, f4 = st.columns(2)
+        sistema_c = f3.radio("Sistema", ["IPTV", "P2P"], horizontal=True)
+        servidor_c = f4.selectbox("Servidor", servidores_atualizados)
+        
+        f5, f6, f7 = st.columns(3)
+        user_c = f5.text_input("Usuário")
+        senha_c = f6.text_input("Senha")
+        venc_c = f7.date_input("Vencimento", value=datetime.now() + pd.Timedelta(days=30))
+        
+        f8, f9 = st.columns(2)
+        custo_c = f8.number_input("Custo (R$)", value=0.0)
+        venda_c = f9.number_input("Venda (R$)", value=35.0)
+        
+        if st.form_submit_button("🚀 FINALIZAR CADASTRO"):
             c = sqlite3.connect('supertv_gestao.db')
-            c.execute("INSERT INTO clientes (servidor, cliente, usuario, senha, vencimento, custo, mensalidade, whatsapp) VALUES (?,?,?,?,?,?,?,?)", 
-                     (srv, nome, user, senha, str(venc), v_custo, v_mensal, wpp))
+            c.execute("INSERT INTO clientes (cliente, whatsapp, sistema, servidor, usuario, senha, vencimento, custo, mensalidade) VALUES (?,?,?,?,?,?,?,?,?)",
+                     (nome_c, whatsapp_c, sistema_c, servidor_c, user_c, senha_c, str(venc_c), custo_c, venda_c))
             c.commit()
-            c.close()
-            st.success("Cliente cadastrado!")
+            st.success("Cadastrado!")
             st.rerun()
 
+# --- ABA 3: CONFIGURAÇÕES E FINANCEIRO ---
 with tab3:
-    st.subheader("🚀 Régua de Cobrança WhatsApp")
-    for i, r in df.iterrows():
-        status, msg, icon = calcular_regua_cobranca(r['vencimento'])
-        if icon != "🟩":
-            link = f"https://wa.me/{r['whatsapp']}?text={urllib.parse.quote(msg)}"
-            col_c1, col_c2 = st.columns([3, 1])
-            col_c1.write(f"**{r['cliente']}** ({status})")
-            col_c2.link_button(f"📲 Cobrar", link)
-
-with tab4:
-    st.header("📂 Ferramentas de Dados")
-    col_a, col_b = st.columns(2)
+    col_fin, col_conf = st.columns(2)
     
-    with col_a:
-        st.subheader("📥 Importar Excel/CSV")
-        up = st.file_uploader("Selecione o arquivo", type=['csv', 'xlsx'])
-        if up:
-            try:
-                df_up = pd.read_csv(up) if up.name.endswith('.csv') else pd.read_excel(up)
-                st.write("Dados detectados:")
-                st.dataframe(df_up.head())
-                if st.button("Confirmar Importação"):
-                    # Aqui você pode adicionar a lógica de mapeamento se desejar
-                    conn = sqlite3.connect('supertv_gestao.db')
-                    df_up.to_sql('clientes', conn, if_exists='append', index=False)
-                    conn.close()
-                    st.success("Dados importados!")
-                    st.rerun()
-            except Exception as e:
-                st.error(f"Erro: {e}")
-
-    with col_b:
-        st.subheader("📤 Backup")
+    with col_fin:
+        st.subheader("📊 Financeiro")
         if not df.empty:
+            lucro = df['mensalidade'].sum() - df['custo'].sum()
+            st.metric("Lucro Mensal Estimado", f"R$ {lucro:.2f}")
+            
             buf = io.BytesIO()
             with pd.ExcelWriter(buf, engine='openpyxl') as writer:
-                df.to_excel(writer, index=False, sheet_name='Clientes')
-            st.download_button(label="📥 Baixar Excel", data=buf.getvalue(), 
-                               file_name="backup_clientes.xlsx", 
-                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                df.to_excel(writer, index=False)
+            st.download_button("📥 Baixar Backup Excel", buf.getvalue(), "backup_clientes.xlsx")
 
+    with col_conf:
+        st.subheader("🛠️ Gerenciar Servidores")
+        novo_serv = st.text_input("Adicionar novo servidor:")
+        if st.button("➕ Adicionar"):
+            if novo_serv:
+                try:
+                    c = sqlite3.connect('supertv_gestao.db')
+                    c.execute("INSERT INTO lista_servidores (nome) VALUES (?)", (novo_serv,))
+                    c.commit()
+                    st.success(f"{novo_serv} adicionado!")
+                    st.rerun()
+                except:
+                    st.error("Servidor já existe.")
+        
+        st.divider()
+        serv_para_apagar = st.selectbox("Remover servidor:", get_servidores())
+        if st.button("🗑️ Remover"):
+            c = sqlite3.connect('supertv_gestao.db')
+            c.execute("DELETE FROM lista_servidores WHERE nome=?", (serv_para_apagar,))
+            c.commit()
+            st.warning(f"{serv_para_apagar} removido!")
+            st.rerun()
