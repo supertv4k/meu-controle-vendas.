@@ -6,7 +6,7 @@ import urllib.parse
 import io
 
 # --- CONFIGURAÇÃO ---
-st.set_page_config(page_title="GESTÃO DE CLIENTES", layout="wide")
+st.set_page_config(page_title="GESTÃO DE CLIENTES SUPERTV", layout="wide")
 
 st.markdown("""
     <style>
@@ -67,8 +67,8 @@ def get_servidores():
     return lista
 
 # --- INTERFACE ---
-st.title("CLIENTES")
 st.image("https://i.imgur.com/CKq9BVx.png,width=250")
+st.title("CLIENTES",layout=wide")
 
 conn = sqlite3.connect('supertv_gestao.db')
 df = pd.read_sql_query("SELECT * FROM clientes", conn)
