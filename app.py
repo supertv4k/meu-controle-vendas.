@@ -6,7 +6,7 @@ import urllib.parse
 import io
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="SUPER TV 4K - GESTÃO", layout="wide")
+st.set_page_config(page_title="CLIENTES", layout="wide"
 
 # Estilização Profissional
 st.markdown("""
@@ -48,7 +48,7 @@ def init_db():
     # Inserção inicial de servidores se estiver vazio
     c.execute("SELECT COUNT(*) FROM lista_servidores")
     if c.fetchone()[0] == 0:
-        servs = ["Uniplay", "Mundo GF", "P2Braz", "Play TV", "P2Cine", "Balde TV", "Speed Tv", "Unitv", "Mega TV", "BobPlayer", "IboPlayer", "IboPlayer pro"]
+        servs = ["UNIPlAY", "MUNDOGF", "P2BRAZ", "PLAYTV", "P2CINE", "BLADETV", "SPEEDTV", "UNITV", "MEGATV", "BobPlayer", "IboPlayer", "IboPlayer pro"]
         for s in servs: c.execute("INSERT OR IGNORE INTO lista_servidores (nome) VALUES (?)", (s,))
     
     conn.commit()
@@ -65,22 +65,22 @@ def obter_regua(venc_data):
         dias = (venc_data - hoje).days
         
         if dias == 3:
-            msg = f"Sua Assinatura Vence em 3 dias! Faça Agora o pagamento pelo PIX e Fique tranquilo !\n\nCopia e Cola no seu Banco!\n\n{pix}"
+            msg = f"Sua Assinatura Vence em  3️⃣ dias! Faça Agora o pagamento pelo PIX e Fique tranquilo !\n\nCopia e Cola no seu Banco!\n\n{pix}"
             return "Vence em 3 dias", msg, "🟨", dias
         elif dias == 2:
-            msg = f"Sua Assinatura Vence em 2 dias! Faça Agora o pagamento pelo PIX e Fique tranquilo !\n\nCopia e Cola no seu Banco!\n\n{pix}"
+            msg = f"Sua Assinatura Vence em 2️⃣ dias! Faça Agora o pagamento pelo PIX e Fique tranquilo !\n\nCopia e Cola no seu Banco!\n\n{pix}"
             return "Vence em 2 dias", msg, "🟨", dias
         elif dias == 1:
-            msg = f"Sua Assinatura Vence Amanhã ! Faça Agora o pagamento pelo PIX e Fique tranquilo !\n\nCopia e Cola no seu Banco!\n\n{pix}"
+            msg = f"Sua Assinatura Vence  1️⃣ Amanhã ! Faça Agora o pagamento pelo PIX e Fique tranquilo !\n\nCopia e Cola no seu Banco!\n\n{pix}"
             return "Vence Amanhã", msg, "🟧", dias
         elif dias == 0:
-            msg = f"Sua Assinatura Vence Hoje ! Faça Agora o pagamento pelo PIX e Já Já Estará Renovado mais 30 Dias!\n\nCopia e Cola no seu Banco!\n\n{pix}"
+            msg = f"Sua Assinatura Vence Hoje⏰ ! Faça Agora o pagamento pelo PIX e Já Já Estará Renovado mais 30 Dias!\n\nCopia e Cola no seu Banco!\n\n{pix}"
             return "Vence HOJE", msg, "🟥", dias
         elif dias < 0:
             msg = f"Sua Assinatura Venceu! Não se Preocupe é só Fazer o Pagamento que Renovamos mais 30 Dias pra Você!\n\nCopia e Cola no seu Banco!\n\n{pix}"
-            return "VENCIDO", msg, "⬛", dias
+            return "VENCIDO", msg, "🚨", dias
         return f"{dias} dias restantes", "", "🟩", dias
-    except: return "Erro", "", "⚪", 0
+    except: return "Erro", "", "❌", 0
 
 def get_servidores():
     conn = sqlite3.connect('supertv_gestao.db')
@@ -89,13 +89,14 @@ def get_servidores():
     return lista
 
 # --- INTERFACE ---
-st.title("🚀 SUPER TV 4K - GESTÃO COMPLETA")
+"https://i.imgur.com/CKq9BVx.png,width=250")
+st.title("CLIENTES",layout=wide")
 
 conn = sqlite3.connect('supertv_gestao.db')
 df = pd.read_sql_query("SELECT * FROM clientes", conn)
 conn.close()
 
-tab1, tab2, tab3, tab4 = st.tabs(["👥 Lista de Clientes", "➕ Novo Cadastro", "📢 DISPARO EM MASSA", "⚙️ Configurações"])
+tab1, tab2, tab3, tab4 = st.tabs(["👥CLIENTES", "➕ADD CLIENTE", "🚨AVISO NO WHATHSAAP", "📡ADD SERVIDoR"])
 
 # --- ABA 1: LISTA E RENOVAÇÃO ---
 with tab1:
@@ -131,7 +132,7 @@ with tab1:
                             c = sqlite3.connect('supertv_gestao.db'); c.execute("DELETE FROM clientes WHERE id=?", (r['id'],)); c.commit(); st.rerun()
                         
                         d_add = b3.number_input("Dias", value=30, step=1, key=f"n{r['id']}")
-                        if b3.button(f"♻️ Renovar +{d_add} dias", key=f"br_{r['id']}"):
+                        if b3.button(f"🔄 Renovar +{d_add} dias", key=f"br_{r['id']}"):
                             nova = (datetime.strptime(str(r['vencimento']), '%Y-%m-%d') + pd.Timedelta(days=d_add)).date()
                             c = sqlite3.connect('supertv_gestao.db'); c.execute("UPDATE clientes SET vencimento=? WHERE id=?", (str(nova), r['id'])); c.commit(); st.rerun()
                     else:
@@ -182,7 +183,7 @@ with tab3:
                     if st.checkbox("", value=sel_todos, key=f"chk_{r['id']}"): selecionados.append(r)
                 with col_inf: st.write(f"{icon} **{r['nome']}** | {status} | {r['whatsapp']}")
             
-            if selecionados and st.button("🚀 GERAR LINKS"):
+            if selecionados and st.button("🔗 GERAR LINKS"):
                 for s in selecionados:
                     _, msg_f, _, _ = obter_regua(s['vencimento'])
                     link = f"https://wa.me/{s['whatsapp']}?text={urllib.parse.quote(msg_f)}"
@@ -193,14 +194,14 @@ with tab3:
 with tab4:
     c_fin, c_srv = st.columns(2)
     with c_fin:
-        st.subheader("📊 Financeiro")
+        st.subheader("⚖️ Financeiro")
         if not df.empty:
             st.metric("Lucro Estimado", f"R$ {df['mensalidade'].sum() - df['custo'].sum():.2f}")
             buf = io.BytesIO()
             with pd.ExcelWriter(buf, engine='openpyxl') as wr: df.to_excel(wr, index=False)
             st.download_button("📥 Backup Excel", buf.getvalue(), "gestao.xlsx")
     with c_srv:
-        st.subheader("🛠️ Servidores")
+        st.subheader("📡 Servidores")
         ns = st.text_input("Novo Nome"); 
         if st.button("Add"): 
             c = sqlite3.connect('supertv_gestao.db'); c.execute("INSERT OR IGNORE INTO lista_servidores (nome) VALUES (?)", (ns,)); c.commit(); st.rerun()
