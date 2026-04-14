@@ -75,11 +75,11 @@ conn = sqlite3.connect('supertv_gestao.db')
 df = pd.read_sql_query("SELECT * FROM clientes", conn)
 conn.close()
 
-tab1, tab2, tab3, tab4 = st.tabs(["👥 Lista", "➕ Novo", "📢 DISPARO EM MASSA", "⚙️ Config"])
+tab1, tab2, tab3, tab4 = st.tabs(["👥 CLIENTES", "➕ ADD CLIENTE", "🚨 AVISO WHATHSAAP", "📡 ADD SERVIDOR"])
 
-# --- TAB 3: DISPARO EM MASSA (A NOVIDADE) ---
+# ---TAB 3: DISPARO EM MASSA (A NOVIDADE) ---
 with tab3:
-    st.subheader("📢 Envio de Mensagens em Massa")
+    st.subheader("🚨 Envio de Mensagens em Massa")
     st.info("Selecione os clientes abaixo e clique no botão para gerar os links de envio sequencial.")
     
     if not df.empty:
@@ -135,7 +135,7 @@ with tab1:
                     b1, b2, b3 = st.columns([1,1,2])
                     if b1.button("🗑️", key=f"d{r['id']}"):
                         c = sqlite3.connect('supertv_gestao.db'); c.execute("DELETE FROM clientes WHERE id=?", (r['id'],)); c.commit(); st.rerun()
-                    if b3.button("♻️ Renovar +30 dias", key=f"r{r['id']}"):
+                    if b3.button("🔄 Renovar +30 dias", key=f"r{r['id']}"):
                         nova = (datetime.strptime(str(r['vencimento']), '%Y-%m-%d') + pd.Timedelta(days=30)).date()
                         c = sqlite3.connect('supertv_gestao.db'); c.execute("UPDATE clientes SET vencimento=? WHERE id=?", (str(nova), r['id'])); c.commit(); st.rerun()
 
