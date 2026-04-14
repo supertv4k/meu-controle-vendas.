@@ -21,11 +21,11 @@ st.markdown("""
 # --- LOGO NO TOPO ---
 col_l, _ = st.columns([1, 4])
 with col_l:
-    st.image("https://i.imgur.com/CKq9BVx.png", width=200)
+    st.image("https://i.imgur.com/CKq9BVx.png", width=500)
 
-st.title("🎬 PAINEL DE GESTÃO SUPERTV4K")
+st.title("🎬 GESTÃO DE CLIENTES")
 
-# --- BANCO DE DADOS ---
+# ---BANCO DE DADOS ---
 def init_db():
     conn = sqlite3.connect('supertv_gestao.db')
     c = conn.cursor()
