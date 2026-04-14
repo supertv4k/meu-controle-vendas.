@@ -27,9 +27,9 @@ col_logo, _ = st.columns([1, 4])
 with col_logo:
     st.image("https://i.imgur.com/CKq9BVx.png", width=200)
 
-st.title("🚀 GESTÃO DE CLIENTES - SUPER TV")
+st.title("🚀 GESTÃO DE CLIENTES  ")
 
-# --- BANCO DE DADOS ---
+# BANCO DE DADOS ---
 def init_db():
     conn = sqlite3.connect('supertv_gestao.db')
     c = conn.cursor()
