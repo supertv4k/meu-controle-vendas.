@@ -31,7 +31,7 @@ def init_db():
     # Inserção inicial de servidores se vazio
     c.execute("SELECT COUNT(*) FROM lista_servidores")
     if c.fetchone()[0] == 0:
-        servs = ["Uniplay", "Mundo GF", "P2Braz", "Play TV", "P2Cine", "Balde TV", "Speed Tv", "Unitv", "Mega TV", "New Mais", "P2Imperial", "Seven", "Zeus", "Ninety", "Alphaplay", "Genial", "RushPlay", "ClubTV", "EasyPlay", "Horizon", "BobPlayer", "IboPlayer", "IboPlayer pro"]
+        servs = ["Uniplay", "Mundo GF", "P2Braz", "Play TV", "P2Cine", "Balde TV", "Speed Tv", "Unitv", "Mega TV", , "BobPlayer", "IboPlayer", "IboPlayer pro"]
         for s in servs: c.execute("INSERT OR IGNORE INTO lista_servidores (nome) VALUES (?)", (s,))
     
     conn.commit()
