@@ -90,7 +90,8 @@ def get_servidores():
 
 # --- INTERFACE ---
 st.image("https://i.imgur.com/CKq9BVx.png,width=250")
-st.title("CLIENTES",layout=wide)
+st.set_page_config(page_title="CLIENTES", layout="wide")
+
 
 conn = sqlite3.connect('supertv_gestao.db')
 df = pd.read_sql_query("SELECT * FROM clientes", conn)
