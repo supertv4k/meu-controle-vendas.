@@ -69,7 +69,8 @@ df = pd.read_sql_query("SELECT * FROM clientes", conn)
 conn.close()
 
 # --- INTERFACE PRINCIPAL ---
-st.title("🎬 GESTÃO SUPERTV4K ")
+st.image("https://imgur.com/a/kwmTPvd.png,width=500")
+st.title("🎬 GESTÃO DE CLIENTES ")
 
 if not df.empty:
     bruto = df['mensalidade'].sum()
