@@ -69,7 +69,7 @@ df = pd.read_sql_query("SELECT * FROM clientes", conn)
 conn.close()
 
 # --- INTERFACE PRINCIPAL ---
-st.image("https://imgur.com/a/kwmTPvd.png,width=500")
+st.image("https://i.imgur.com/CKq9BVx.png,width=500")
 st.title("🎬 GESTÃO DE CLIENTES ")
 
 if not df.empty:
