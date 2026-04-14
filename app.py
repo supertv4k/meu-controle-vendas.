@@ -35,9 +35,7 @@ def init_db():
     if c.fetchone()[0] == 0:
         servidores_iniciais = [
             "Uniplay", "Mundo GF", "P2Braz", "Play TV", "P2Cine", "Balde TV", 
-            "Speed Tv", "Unitv", "Mega TV", "New Mais", "P2Imperial", "Seven", 
-            "Zeus", "Ninety", "Alphaplay", "Genial", "RushPlay", "ClubTV", 
-            "EasyPlay", "Horizon", "BobPlayer", "IboPlayer", "IboPlayer pro"
+            "Speed Tv", "Unitv", "Mega TV","BobPlayer", "IboPlayer", "IboPlayer pro"
         ]
         for s in servidores_iniciais:
             c.execute("INSERT OR IGNORE INTO lista_servidores (nome) VALUES (?)", (s,))
@@ -66,7 +64,7 @@ def calcular_regua_cobranca(venc_data):
     except: return "Erro Data", "", "⚪"
 
 # --- INTERFACE ---
-st.title("🚀 GESTÃO PROFISSIONAL - SUPER TV")
+st.title("🚀 GESTÃO DE CLIENTES")
 
 conn = sqlite3.connect('supertv_gestao.db')
 df = pd.read_sql_query("SELECT * FROM clientes", conn)
