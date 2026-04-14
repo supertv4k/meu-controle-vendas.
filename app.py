@@ -6,7 +6,7 @@ import urllib.parse
 import io
 
 # --- CONFIGURAÇÃO ---
-st.set_page_config(page_title="GESTÃO SUPER TV", layout="wide")
+st.set_page_config(page_title="GESTÃO DE CLIENTES", layout="wide")
 
 st.markdown("""
     <style>
@@ -157,8 +157,8 @@ with tab2:
         
         if st.form_submit_button("🚀 FINALIZAR CADASTRO"):
             c = sqlite3.connect('supertv_gestao.db')
-            c.execute("INSERT INTO clientes (cliente, whatsapp, sistema, servidor, usuario, senha, vencimento, custo, mensalidade) VALUES (?,?,?,?,?,?,?,?,?)",
-                     (nome_c, whatsapp_c, sistema_c, servidor_c, user_c, senha_c, str(venc_c), custo_c, venda_c))
+            c.execute("INSERT INTO clientes (cliente,usuario, senha,servidor,sistema, whatsapp, vencimento, custo, mensalidade) VALUES (?,?,?,?,?,?,?,?,?)",
+                     (nome_c,usuario_c,senha_c,servidor_c,sistema_c, whatsapp_c, str(venc_c), custo_c, venda_c))
             c.commit()
             st.success("Cadastrado!")
             st.rerun()
