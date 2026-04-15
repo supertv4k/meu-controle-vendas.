@@ -6,7 +6,7 @@ import urllib.parse
 import io
 
 # --- CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="CLIENTES", layout="wide"
+st.set_page_config_page_title="CLIENTES", layout="wide"
 
 # Estilização Profissional
 st.markdown("""
