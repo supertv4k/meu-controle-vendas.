@@ -177,7 +177,3 @@ with tab4:
         st.subheader("📡 Servidores")
         ns = st.text_input("Novo Nome")
         if st.button("Add"):
-            c = sqlite3.connect('supertv_gestao.db'); c.execute("INSERT OR IGNORE INTO lista_servidores (nome) VALUES (?)", (ns,)); c.commit(); st.rerun()
-        rs = st.selectbox("Remover", get_servidores())
-        if st.button("Remover"):
-            c = sqlite3.connect('supertv_gestao.db'); c.execute("DELETE FROM lista_servidores WHERE nome=?", (rs,)); c.commit(); st.rerun()
